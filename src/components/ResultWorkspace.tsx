@@ -8,7 +8,7 @@ import { markdown as markdownLang } from "@codemirror/lang-markdown";
 import { Copy, Download, FileText, RefreshCw, File, Code } from "lucide-react";
 import { useTheme } from "next-themes";
 import ReactDOMServer from "react-dom/server";
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from "react-resizable-panels";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github-dark.css";
 
