@@ -11,6 +11,15 @@ interface UploadZoneProps {
   onConversionComplete: (markdown: string, fileInfo: { name: string; pageCount: number }) => void;
 }
 
+const LANGUAGES = [
+  { code: "eng", name: "English" },
+  { code: "hin", name: "Hindi" },
+  { code: "tam", name: "Tamil" },
+  { code: "spa", name: "Spanish" },
+  { code: "fra", name: "French" },
+  { code: "deu", name: "German" },
+];
+
 // A tiny valid PDF base64 string to act as the sample
 const SAMPLE_PDF_BASE64 =
   "JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAzMDAgMTAwXSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+ID4+ID4+ID4+CmVuZG9iago0IDAgb2JqCjw8IC9MZW5ndGggNTEgPj4Kc3RyZWFtCkJUCi9GMSAyNCBUZgoxMCA1MCBUZAooSGVsbG8gV29ybGQpIFRqCkVUCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDUKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTYgMDAwMDAgbiAKMDAwMDAwMDExMyAwMDAwMCBuIAowMDAwMDAwMjg0IDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNSAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMzg2CiUlRU9GCg==";
@@ -30,6 +39,7 @@ export function UploadZone({ onConversionComplete }: UploadZoneProps) {
   const [progress, setProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState("");
   const [error, setError] = useState("");
+  const [language, setLanguage] = useState("eng");
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -45,7 +55,7 @@ export function UploadZone({ onConversionComplete }: UploadZoneProps) {
     if (rejection.errors[0]?.code === "file-too-large") {
       toast.error("File is too large. Maximum size is 10MB.");
     } else if (rejection.errors[0]?.code === "file-invalid-type") {
-      toast.error("Invalid file type. Please upload a PDF.");
+      toast.error("Invalid file type. Please upload a PDF or Image.");
     } else {
       toast.error(rejection.errors[0]?.message || "File rejected");
     }
@@ -56,6 +66,8 @@ export function UploadZone({ onConversionComplete }: UploadZoneProps) {
     onDropRejected,
     accept: {
       "application/pdf": [".pdf"],
+      "image/png": [".png"],
+      "image/jpeg": [".jpg", ".jpeg"],
     },
     maxFiles: 1,
     maxSize: 10 * 1024 * 1024, // 10MB
@@ -82,26 +94,49 @@ export function UploadZone({ onConversionComplete }: UploadZoneProps) {
     setStatusMessage("Initializing PDF parser...");
 
     try {
-      const pdfjsLib = await import("pdfjs-dist");
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
-
-      const arrayBuffer = await fileToUpload.arrayBuffer();
-      
-      const loadingTask = pdfjsLib.getDocument({
-        data: arrayBuffer,
-        cMapUrl: `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
-        cMapPacked: true,
-      });
-
-      const pdf = await loadingTask.promise;
-      const numPages = pdf.numPages;
       let markdown = "";
+      let numPages = 1;
 
-      for (let i = 1; i <= numPages; i++) {
-        setStatusMessage(`Extracting page ${i} of ${numPages}...`);
-        setProgress(Math.round(((i - 1) / numPages) * 100));
+      if (fileToUpload.type.startsWith("image/")) {
+        setStatusMessage(`Running OCR on image (${language})...`);
+        setProgress(10);
+        
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(fileToUpload);
+        });
 
-        const page = await pdf.getPage(i);
+        const result = await Tesseract.recognize(dataUrl, language, {
+          logger: (m) => {
+            if (m.status === "recognizing text") {
+              setProgress(Math.round(10 + m.progress * 90));
+            }
+          }
+        });
+
+        markdown = result.data.text;
+      } else {
+        const pdfjsLib = await import("pdfjs-dist");
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
+        const arrayBuffer = await fileToUpload.arrayBuffer();
+        
+        const loadingTask = pdfjsLib.getDocument({
+          data: arrayBuffer,
+          cMapUrl: `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
+          cMapPacked: true,
+        });
+
+        const pdf = await loadingTask.promise;
+        numPages = pdf.numPages;
+
+        for (let i = 1; i <= numPages; i++) {
+          setStatusMessage(`Extracting page ${i} of ${numPages}...`);
+          setProgress(Math.round(((i - 1) / numPages) * 100));
+
+          const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 1.5 });
         
         const canvas = document.createElement("canvas");
@@ -118,11 +153,11 @@ export function UploadZone({ onConversionComplete }: UploadZoneProps) {
           viewport: viewport,
         }).promise;
         
-        setStatusMessage(`Running OCR on page ${i} of ${numPages}...`);
+        setStatusMessage(`Running OCR on page ${i} of ${numPages} (${language})...`);
         
         const dataUrl = canvas.toDataURL("image/png");
         
-        const result = await Tesseract.recognize(dataUrl, "eng", {
+        const result = await Tesseract.recognize(dataUrl, language, {
           logger: (m) => {
             if (m.status === "recognizing text") {
               const baseProgress = ((i - 1) / numPages) * 100;
@@ -134,6 +169,7 @@ export function UploadZone({ onConversionComplete }: UploadZoneProps) {
         
         markdown += `## Page ${i}\n\n${result.data.text}\n\n`;
       }
+    }
 
       setProgress(100);
       setStatusMessage("Done!");
@@ -181,6 +217,21 @@ export function UploadZone({ onConversionComplete }: UploadZoneProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
+        <div className="mb-4 flex justify-end">
+          <select 
+            value={language} 
+            onChange={(e) => setLanguage(e.target.value)}
+            disabled={isUploading}
+            className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm dark:bg-[#111111] dark:text-gray-300 dark:border-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer disabled:opacity-50"
+          >
+            {LANGUAGES.map(lang => (
+              <option key={lang.code} value={lang.code}>
+                {lang.name} OCR
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div
           {...getRootProps()}
           className={`relative flex flex-col items-center justify-center w-full p-12 border-2 border-dashed rounded-xl transition-all ${
@@ -293,7 +344,7 @@ export function UploadZone({ onConversionComplete }: UploadZoneProps) {
                 </div>
                 <div>
                   <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    {isDragActive ? "Drop the PDF here..." : "Drag & drop your PDF here"}
+                    {isDragActive ? "Drop the file here..." : "Drag & drop your PDF or Image here"}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     or click to browse from your computer
@@ -301,7 +352,7 @@ export function UploadZone({ onConversionComplete }: UploadZoneProps) {
                 </div>
                 <div className="flex gap-3 pointer-events-auto">
                   <button className="mt-4 px-6 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 transition-colors">
-                    Select PDF
+                    Select File
                   </button>
                 </div>
               </motion.div>

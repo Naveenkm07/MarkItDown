@@ -5,14 +5,31 @@ import { UploadZone } from "@/components/UploadZone";
 import { ResultWorkspace, DocumentInfo } from "@/components/ResultWorkspace";
 import { FAQ } from "@/components/FAQ";
 import { motion, AnimatePresence } from "framer-motion";
+import localforage from "localforage";
+import { HistoryModal, HistoryItem } from "@/components/HistoryModal";
 
 export default function Home() {
   const [markdown, setMarkdown] = useState<string>("");
   const [docInfo, setDocInfo] = useState<DocumentInfo | null>(null);
 
-  const handleConversionComplete = (content: string, info: { name: string; pageCount: number }) => {
+  const handleConversionComplete = async (content: string, info: { name: string; pageCount: number }) => {
     setMarkdown(content);
     setDocInfo(info);
+
+    try {
+      const history = (await localforage.getItem<HistoryItem[]>("conversionHistory")) || [];
+      const newItem: HistoryItem = {
+        id: Date.now().toString(),
+        timestamp: Date.now(),
+        markdown: content,
+        docInfo: info,
+      };
+      
+      const newHistory = [newItem, ...history].slice(0, 50); // Keep last 50 items
+      await localforage.setItem("conversionHistory", newHistory);
+    } catch (err) {
+      console.error("Failed to save to history", err);
+    }
   };
 
   const handleReset = () => {
@@ -58,6 +75,9 @@ export default function Home() {
               <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
                 Convert PDF to Markdown instantly using OCR.
               </p>
+              <div className="flex justify-center pt-2">
+                <HistoryModal onSelectHistory={handleConversionComplete} />
+              </div>
             </motion.div>
             
             <UploadZone onConversionComplete={handleConversionComplete} />
