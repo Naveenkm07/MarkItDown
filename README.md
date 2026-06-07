@@ -7,7 +7,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)](https://nextjs.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 [![Tesseract.js](https://img.shields.io/badge/OCR-Tesseract.js-green)](https://tesseract.projectnaptha.com/)
-[![Deployment: 0-Cost Ready](https://img.shields.io/badge/Deployment-0--Cost%20Ready-success)](#-zero-cost-deployment)
+[![Deployment: Vercel & Netlify Ready](https://img.shields.io/badge/Deployment-Ready-success)](#-deployment)
 
 *Convert complex PDFs into clean, copyable Markdown entirely within your browser.*
 
@@ -25,8 +25,8 @@ By leveraging WebAssembly and Modern Web APIs, MarkItDown performs 100% of the O
 
 ### Core Advantages:
 - 🔒 **Absolute Privacy:** Your files are **never** uploaded to a server. Everything runs locally inside the browser memory.
-- 💸 **Zero Server Cost:** Optimized perfectly for Edge/Static deployment on Vercel or Netlify. Since your browser does the heavy lifting, backend compute costs are strictly $0.
-- ⚡ **Offline Resilient:** Once the webpage and lightweight OCR models are loaded, you can disconnect from the internet and keep converting.
+- ⚡ **Edge Optimized:** Built entirely for static deployment. Since your browser handles the OCR processing, it requires zero backend compute resources.
+- 🌍 **Offline Resilient:** Once the webpage and lightweight OCR models are loaded, you can disconnect from the internet and keep converting.
 - 🎨 **Beautiful Developer Experience:** Features a modern, Glassmorphic UI built with Tailwind CSS and Framer Motion, fully supporting automatic Dark Mode.
 
 ---
@@ -70,9 +70,9 @@ Navigate to `http://localhost:3000` in your web browser.
 
 ---
 
-## ☁️ Zero-Cost Deployment
+## ☁️ Deployment
 
-This application is purposefully architected to sidestep the notorious `10s timeout limit` on Vercel's free serverless functions. 
+This application is fully optimized for Edge and Static deployment. 
 
 ### Deploying to Vercel (Recommended)
 1. Push your code to a GitHub repository.
