@@ -13,16 +13,24 @@ export function FAQ() {
     {
       question: "How does this tool work?",
       answer:
-        "When you upload a PDF, we securely process each page and convert it into a high-resolution image. We then use an advanced OCR engine (Tesseract) to extract the text from those images and format it as clean Markdown.",
+        "When you upload a PDF, your browser securely processes each page and converts it into a high-resolution image. It then uses an advanced OCR engine (Tesseract) to extract the text from those images and formats it as clean Markdown.",
     },
     {
       question: "Is my data secure?",
       answer:
-        "Yes! All processing happens completely locally in this environment, or on a secure server that immediately discards the file after processing. No documents are stored permanently.",
+        "Yes! 100% of the processing happens locally on your own device inside your web browser. Your files are never uploaded to any server, guaranteeing complete privacy and security.",
+    },
+    {
+      question: "Does this work offline?",
+      answer: "Yes! Because the entire conversion process runs directly in your browser, you can use this tool even without an active internet connection after the page has initially loaded.",
+    },
+    {
+      question: "Why does the first conversion take longer?",
+      answer: "The very first time you convert a document, your browser downloads a highly optimized language recognition model (about 20MB) to perform the OCR. All subsequent conversions will be much faster and won't require this download.",
     },
     {
       question: "Is there a file size limit?",
-      answer: "Yes, currently the maximum supported file size is 10MB to ensure fast processing and stability.",
+      answer: "We recommend keeping files under 10MB to ensure your browser doesn't run out of memory during the extraction process.",
     },
   ];
 
